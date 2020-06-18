@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>SET YOUR GROUPID</groupId>
-    <artifactId>SET PACKAGE NAME</artifactId>
+    <groupId>de.hzg.wpi.waltz-controls</groupId>
+    <artifactId>magix</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <developers>
         <developer>
-            <!--SET DEVELOPER-->
+            <id>khokhria</id>
+            <name>Igor Khokhriakov</name>
+            <email>igor.khokhriakov@hzg.de</email>
         </developer>
     </developers>
 
     <organization>
-        <!--SET ORGANIZATION-->
+        <name>Helmholtz-Zentrum Geesthacht</name>
+        <url>https://hzg.de</url>
     </organization>
 
     <licenses>
-        <license>        
-            <!--SET LICENSE-->
+        <license>
+            <name>MIT</name>
+            <url>https://github.com/waltz-controls/magix-war-plugin/blob/master/LICENSE</url>
         </license>
     </licenses>
 
@@ -30,13 +35,16 @@
         <tomcat.version>[9.0.12,)</tomcat.version>
         <mongodb-driver.version>3.11.2</mongodb-driver.version>
         <slf4j-api.version>1.7.5</slf4j-api.version>
-        <custom.build.name>xenv</custom.build.name>
+        <custom.build.name>magix</custom.build.name>
         <mongodb.host>localhost</mongodb.host>
     </properties>
 
 
     <scm>
-        <!--SET SCM-->        
+        <connection>scm:git:git@github.com:waltz-controls/magix-war-plugin</connection>
+        <developerConnection>scm:git:git@github.com:waltz-controls/magix-war-plugin</developerConnection>
+        <url>https://github.com/waltz-controls/magix-war-plugin</url>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
