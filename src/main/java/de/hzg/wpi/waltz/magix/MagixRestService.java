@@ -1,5 +1,8 @@
 package de.hzg.wpi.waltz.magix;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -16,6 +19,8 @@ import javax.ws.rs.sse.SseEventSink;
  */
 @Path("/")
 public class MagixRestService {
+    private final Logger logger = LoggerFactory.getLogger(MagixRestService.class);
+
     private volatile SseBroadcaster broadcaster;
 
     @Context
@@ -26,6 +31,7 @@ public class MagixRestService {
     @POST
     @Path("/broadcast")
     public void post(String message, @Context Sse sse) {
+        logger.debug("broadcasting message {}", message);
         broadcaster.broadcast(sse.newEvent(message));
     }
 
@@ -33,6 +39,7 @@ public class MagixRestService {
     @Path("/subscribe")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void getStream(@Context SseEventSink sink) {
+        logger.debug("Subscribing new client...");
         broadcaster.register(sink);
     }
 }
