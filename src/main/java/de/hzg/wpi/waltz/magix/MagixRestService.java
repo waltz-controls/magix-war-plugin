@@ -3,12 +3,10 @@ package de.hzg.wpi.waltz.magix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
@@ -30,9 +28,15 @@ public class MagixRestService {
 
     @POST
     @Path("/broadcast")
-    public void post(String message, @Context Sse sse) {
-        logger.debug("broadcasting message {}", message);
-        broadcaster.broadcast(sse.newEvent(message));
+    public void post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
+        logger.debug("broadcasting message {} into channel {}", message, channel);
+        OutboundSseEvent event = sse.newEventBuilder()
+                .name(channel)
+                .data(message)
+                .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                .build();
+
+        broadcaster.broadcast(event);
     }
 
     @GET
