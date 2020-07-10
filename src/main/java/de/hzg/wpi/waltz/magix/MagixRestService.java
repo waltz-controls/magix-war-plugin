@@ -10,6 +10,7 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @author ingvord
@@ -28,7 +29,7 @@ public class MagixRestService {
 
     @POST
     @Path("/broadcast")
-    public void post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
+    public CompletionStage<?> post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
         logger.debug("broadcasting message {} into channel {}", message, channel);
         OutboundSseEvent event = sse.newEventBuilder()
                 .name(channel)
@@ -36,7 +37,7 @@ public class MagixRestService {
                 .mediaType(MediaType.APPLICATION_JSON_TYPE)
                 .build();
 
-        broadcaster.broadcast(event);
+        return broadcaster.broadcast(event);
     }
 
     @GET
