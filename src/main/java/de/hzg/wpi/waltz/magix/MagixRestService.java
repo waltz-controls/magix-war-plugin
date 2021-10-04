@@ -27,8 +27,13 @@ public class MagixRestService {
         broadcaster = sse.newBroadcaster();
     }
 
+    @GET
+    public String get(){
+        return "OK!";
+    }
+
     @POST
-    @Path("/broadcast")
+    @Path("/api/broadcast")
     public CompletionStage<?> post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
         logger.debug("broadcasting message {} into channel {}", message, channel);
         OutboundSseEvent event = sse.newEventBuilder()
@@ -41,7 +46,7 @@ public class MagixRestService {
     }
 
     @GET
-    @Path("/subscribe")
+    @Path("/api/subscribe")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void getStream(@Context SseEventSink sink) {
         logger.debug("Subscribing new client...");

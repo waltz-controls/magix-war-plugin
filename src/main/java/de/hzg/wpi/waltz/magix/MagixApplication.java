@@ -11,7 +11,7 @@ import java.util.Set;
  * @author ingvord
  * @since 18.06.2020
  */
-@ApplicationPath("/api")
+@ApplicationPath("/")
 public class MagixApplication extends Application {
 
     @Override
