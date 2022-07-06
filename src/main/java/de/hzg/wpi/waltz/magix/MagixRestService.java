@@ -15,6 +15,7 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,7 +88,7 @@ public class MagixRestService {
 
         if(jsonMessage.get("origin").equals("axsis-gui"))
             transactions.put(String.valueOf(jsonMessage.get("id")),beginTransaction(jsonMessage));
-        else if(jsonMessage.getOrDefault("action","").equals("done"))
+        else if(Optional.ofNullable(jsonMessage.get("action")).orElse("").equals("done"))
             endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
         else
             logger.debug("Skipping transaction handler for message {}", message);
