@@ -54,9 +54,10 @@ public class MagixRestService {
             JSONObject jsonMessage = (JSONObject) jsonParser.parse(message);
 
             span.injectTraceHeaders((key, value) -> {
-                System.out.println(key);
-                System.out.println(value);
-                jsonMessage.put(key, value);
+//                System.out.println(key);
+//                System.out.println(value);
+                if("traceparent".equals(key))
+                    jsonMessage.put("id", value);
             });
 
             OutboundSseEvent event = sse.newEventBuilder()
