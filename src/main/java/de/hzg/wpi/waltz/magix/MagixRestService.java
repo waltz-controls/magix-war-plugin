@@ -4,6 +4,7 @@ import co.elastic.apm.api.Span;
 import co.elastic.apm.api.Transaction;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,11 @@ import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import co.elastic.apm.api.ElasticApm;
 
 
@@ -24,9 +29,12 @@ import co.elastic.apm.api.ElasticApm;
  */
 @Path("/")
 public class MagixRestService {
+    public static final String TRANSACTION_NAME = "magix";
     private final Logger logger = LoggerFactory.getLogger(MagixRestService.class);
 
     private volatile SseBroadcaster broadcaster;
+
+    private final ConcurrentMap<String, TransactionHolder> transactions = new ConcurrentHashMap<>();
 
     @Context
     public void setSse(Sse sse) {
@@ -38,42 +46,63 @@ public class MagixRestService {
         return "OK!";
     }
 
+    private TransactionHolder beginTransaction(JSONObject jsonMessage){
+        Transaction transaction = ElasticApm.startTransaction();
+        transaction.setName(TRANSACTION_NAME);
+        Span span = transaction.startSpan();
+        span.setName(TRANSACTION_NAME);
+
+        span.injectTraceHeaders((key, value) -> {
+//                System.out.println(key);
+//                System.out.println(value);
+            if("traceparent".equals(key))
+                ((JSONObject)jsonMessage.get("payload")).put("traceparent", value);
+        });
+
+        return new TransactionHolder(transaction, span);
+    }
+
+    private void endTransaction(TransactionHolder holder){
+        holder.span.end();
+        holder.transaction.end();
+    }
+
     @POST
     @Path("/api/broadcast")
     public CompletionStage<?> post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
         logger.debug("broadcasting message {} into channel {}", message, channel);
 
-        Transaction transaction = ElasticApm.startTransaction();
-        transaction.setName("magix");
-        Span span = transaction.startSpan();
-
-
-        try {
-            //TODO use provider
-            JSONParser jsonParser = new JSONParser();
-            JSONObject jsonMessage = (JSONObject) jsonParser.parse(message);
-
-            span.injectTraceHeaders((key, value) -> {
-//                System.out.println(key);
-//                System.out.println(value);
-                if("traceparent".equals(key))
-                    jsonMessage.put("id", value);
-            });
-
-            OutboundSseEvent event = sse.newEventBuilder()
-                    .id(String.valueOf(jsonMessage.get("id")))
-                    .name(channel)
-                    .data(jsonMessage.toJSONString())
-                    .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                    .build();
-
-            return broadcaster.broadcast(event);
-        } catch(Exception e){
-            span.captureException(e);
-            transaction.captureException(e);
-            return null;// Ouch
+        //TODO use provider
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jsonMessage;
+        try{
+            jsonMessage = (JSONObject) jsonParser.parse(message);
+        } catch (ParseException e){
+            logger.warn(String.format("Failed to parse JSON string %s", message), e);
+            CompletableFuture<?> rv = new CompletableFuture<>();
+            rv.completeExceptionally(e);
+            return rv;
         }
-        //TODO end transaction and span?
+
+
+        if(jsonMessage.get("origin").equals("axsis-gui"))
+            transactions.put(String.valueOf(jsonMessage.get("id")),beginTransaction(jsonMessage));
+        else if(jsonMessage.get("action").equals("done"))
+            endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
+        else
+            logger.debug("Skipping transaction handler for message {}", message);
+
+
+
+
+        OutboundSseEvent event = sse.newEventBuilder()
+                .id(String.valueOf(jsonMessage.get("id")))
+                .name(channel)
+                .data(jsonMessage.toJSONString())
+                .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                .build();
+
+        return broadcaster.broadcast(event);
     }
 
     @GET
@@ -82,5 +111,15 @@ public class MagixRestService {
     public void getStream(@Context SseEventSink sink) {
         logger.debug("Subscribing new client...");
         broadcaster.register(sink);
+    }
+
+    private static class TransactionHolder {
+        final Transaction transaction;
+        final Span span;
+
+        private TransactionHolder(Transaction transaction, Span span) {
+            this.transaction = transaction;
+            this.span = span;
+        }
     }
 }
