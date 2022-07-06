@@ -87,7 +87,7 @@ public class MagixRestService {
 
         if(jsonMessage.get("origin").equals("axsis-gui"))
             transactions.put(String.valueOf(jsonMessage.get("id")),beginTransaction(jsonMessage));
-        else if(jsonMessage.get("action").equals("done"))
+        else if(jsonMessage.getOrDefault("action","").equals("done"))
             endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
         else
             logger.debug("Skipping transaction handler for message {}", message);
