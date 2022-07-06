@@ -96,7 +96,6 @@ public class MagixRestService {
 
 
         OutboundSseEvent event = sse.newEventBuilder()
-                .id(String.valueOf(jsonMessage.get("id")))
                 .name(channel)
                 .data(jsonMessage.toJSONString())
                 .mediaType(MediaType.APPLICATION_JSON_TYPE)
