@@ -4,7 +4,7 @@
 
     <groupId>com.github.waltz-controls</groupId>
     <artifactId>magix</artifactId>
-    <version>0.14-SNAPSHOT</version>
+    <version>0.14</version>
     <packaging>war</packaging>
 
     <developers>
@@ -44,7 +44,7 @@
         <connection>scm:git:git@github.com:waltz-controls/magix-war-plugin</connection>
         <developerConnection>scm:git:git@github.com:waltz-controls/magix-war-plugin</developerConnection>
         <url>https://github.com/waltz-controls/magix-war-plugin</url>
-        <tag>HEAD</tag>
+        <tag>magix-0.14</tag>
     </scm>
 
     <dependencies>
