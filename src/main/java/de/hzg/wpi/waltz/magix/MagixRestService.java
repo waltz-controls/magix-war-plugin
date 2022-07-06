@@ -1,5 +1,9 @@
 package de.hzg.wpi.waltz.magix;
 
+import co.elastic.apm.api.Span;
+import co.elastic.apm.api.Transaction;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +15,8 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 import java.util.concurrent.CompletionStage;
+import co.elastic.apm.api.ElasticApm;
+
 
 /**
  * @author ingvord
@@ -36,13 +42,37 @@ public class MagixRestService {
     @Path("/api/broadcast")
     public CompletionStage<?> post(String message, @QueryParam("channel") @DefaultValue("message") String channel, @Context Sse sse) {
         logger.debug("broadcasting message {} into channel {}", message, channel);
-        OutboundSseEvent event = sse.newEventBuilder()
-                .name(channel)
-                .data(message)
-                .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                .build();
 
-        return broadcaster.broadcast(event);
+        Transaction transaction = ElasticApm.startTransaction();
+        transaction.setName("magix");
+        Span span = transaction.startSpan();
+
+
+        try {
+            //TODO use provider
+            JSONParser jsonParser = new JSONParser();
+            JSONObject jsonMessage = (JSONObject) jsonParser.parse(message);
+
+            span.injectTraceHeaders((key, value) -> {
+                System.out.println(key);
+                System.out.println(value);
+                jsonMessage.put(key, value);
+            });
+
+            OutboundSseEvent event = sse.newEventBuilder()
+                    .id(String.valueOf(jsonMessage.get("id")))
+                    .name(channel)
+                    .data(message)
+                    .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                    .build();
+
+            return broadcaster.broadcast(event);
+        } catch(Exception e){
+            span.captureException(e);
+            transaction.captureException(e);
+            return null;// Ouch
+        }
+        //TODO end transaction and span?
     }
 
     @GET
