@@ -90,11 +90,15 @@ public class MagixRestService {
 
         if(jsonMessage.get("origin").equals("axsis-gui")){
             txn = ElasticApm.startTransaction();
-            txn.setName("move");
+            txn.setName("move-from-gui-broadcast");
+            txn.injectTraceHeaders((key, value) -> {
+                if("traceparent".equals(key))
+                    ((JSONObject)jsonMessage.get("payload")).put("traceparent", value);
+            });
         }
         else if(jsonMessage.get("origin").equals("axsis-tango")){
             txn = ElasticApm.startTransactionWithRemoteParent(headerName -> String.valueOf(((JSONObject)jsonMessage.get("payload")).get(headerName)));
-            txn.setName("move");
+            txn.setName("move-from-tango-broadcast");
         }
 //        else if(Optional.ofNullable(jsonMessage.get("action")).orElse("").equals("done"))
 //            endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
@@ -103,7 +107,7 @@ public class MagixRestService {
 
 
 
-        Span span = txn.startSpan("move","","move");
+        Span span = txn.startSpan();
         try {
             OutboundSseEvent event = sse.newEventBuilder()
                     .name(channel)
