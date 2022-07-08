@@ -51,7 +51,7 @@ public class MagixRestService {
         Transaction transaction = ElasticApm.startTransaction();
         transaction.setName(TRANSACTION_NAME);
         Span span = transaction.startSpan();
-        span.setName(TRANSACTION_NAME);
+        span.setName("magix-broadcast");
 
         span.injectTraceHeaders((key, value) -> {
 //                System.out.println(key);
@@ -86,23 +86,36 @@ public class MagixRestService {
         }
 
 
-        if(jsonMessage.get("origin").equals("axsis-gui"))
-            transactions.put(String.valueOf(jsonMessage.get("id")),beginTransaction(jsonMessage));
-        else if(Optional.ofNullable(jsonMessage.get("action")).orElse("").equals("done"))
-            endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
+        Transaction txn = ElasticApm.currentTransaction();
+
+        if(jsonMessage.get("origin").equals("axsis-gui")){
+            txn = ElasticApm.startTransaction();
+            txn.setName("move");
+        }
+        else if(jsonMessage.get("origin").equals("axsis-tango")){
+            txn = ElasticApm.startTransactionWithRemoteParent(headerName -> String.valueOf(((JSONObject)jsonMessage.get("payload")).get(headerName)));
+            txn.setName("move");
+        }
+//        else if(Optional.ofNullable(jsonMessage.get("action")).orElse("").equals("done"))
+//            endTransaction(transactions.remove(String.valueOf(jsonMessage.get("parentId"))));
         else
             logger.debug("Skipping transaction handler for message {}", message);
 
 
 
+        Span span = txn.startSpan("move","","move");
+        try {
+            OutboundSseEvent event = sse.newEventBuilder()
+                    .name(channel)
+                    .data(jsonMessage.toJSONString())
+                    .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                    .build();
 
-        OutboundSseEvent event = sse.newEventBuilder()
-                .name(channel)
-                .data(jsonMessage.toJSONString())
-                .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                .build();
-
-        return broadcaster.broadcast(event);
+            return broadcaster.broadcast(event);
+        } finally {
+            span.end();
+            txn.end();
+        }
     }
 
     @GET
