@@ -145,7 +145,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.5</version>                
+                <version>3.3.2</version>
                 <configuration>
                     <filteringDeploymentDescriptors>true</filteringDeploymentDescriptors>
                 </configuration>
@@ -184,6 +184,26 @@
                 <version>3.1.1</version>
                 <configuration>
                     <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.2.1</version>
+                <configuration>
+                    <container>
+                        <appRoot>/usr/local/tomcat/webapps/magix</appRoot>
+                        <ports>
+                            <port>8080</port>
+                        </ports>
+                    </container>
+                    <!-- uses jetty by default -->
+                    <from>
+                        <image>tomcat:9-jre11-openjdk</image>
+                    </from>
+                    <to>
+                        <image>ingvord/magix</image>
+                    </to>
                 </configuration>
             </plugin>
         </plugins>
